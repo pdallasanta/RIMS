@@ -26,6 +26,16 @@
 #define TEMP_INTERVAL 500 // refresh da temperatura
 
 /*
+ * Definicoes de seguranca
+ * MIN_TEMP - Define a temperatura minima lida pelo sensor para o sistema operar.
+ * Serve como uma seguranca para indicar se algum liquido ja esta circulando.
+ * MAX_TEMP_DELTA - Delta maximo entre uma leitura e outra de tempertura. Pode
+ * indicar um superaquecimento no sistema (resistencia seca).
+ */
+#define MIN_TEMP       45.0
+#define MAX_TEMP_DELTA 1.0
+
+/*
  * Definicoes de pinos
  * SSR_PIN - Pino do SSR
  * ENC_PINA - Pino A do encoder
