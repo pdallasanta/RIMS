@@ -3,27 +3,26 @@
  */
 
 /*
+ * Definicoes de estado do sistema
+ */
+#define OS_RUN 0
+#define OS_OFF 1
+#define OS_ERR 2
+
+/*
  * Definicoes do PID
- * PID_GAP - quando a diferenca entre a temperatura atual e a medida
- * for maior que esse valor, ele muda os parametros para valores
- * mais agressivo (PID_AGG_*). Senao ele fica no modo mais conservador
- * (PID_CONS_*).
  */ 
-#define PID_GAP       10 // gap para decidir entre os modos
-#define PID_MODE_CONS 0 // conservador
-#define PID_MODE_AGG  1 // agressivo
-#define PID_CONS_KP   50
-#define PID_CONS_KI   0.2
-#define PID_CONS_KD   10
-#define PID_AGG_KP    50
-#define PID_AGG_KI    0.5
-#define PID_AGG_KD    1
+#define PID_MODE_NORMAL 0
+#define PID_MODE_TUNE   1
+#define PID_KP          850
+#define PID_KI          0.5
+#define PID_KD          0.1
 
 /*
  * Definicoes de timers
  */
 #define LCD_INTERVAL  1000 // refresh do LCD
-#define TEMP_INTERVAL 500 // refresh da temperatura
+#define TEMP_INTERVAL 1000 // refresh da temperatura
 
 /*
  * Definicoes de seguranca
@@ -84,6 +83,5 @@ const unsigned char ttable[7][4] = {
 struct settings_t {
   double sv; // SetValue
   double Kp, Ki, Kd; // PID
-  int pid_mode; // pid_mode (PID_MODE_AGG | PID_MODE_CONS)
 };
 
