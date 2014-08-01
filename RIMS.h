@@ -36,6 +36,19 @@
 #define MAX_TEMP_DELTA 1.0
 
 /*
+ * Definicoes da comunicacao serial
+ *
+*/
+#define SERIAL_PORT_SPEED	57600	// Serial port bit rate
+#define MAX_COMMAND_SIZE	16		// Maximum command size
+
+// IDs dos comandos
+#define WRITE_BYTE_CMD_ID	'W'		// Write byte command Id
+#define READ_BYTE_CMD_ID	'R'		// Read byte command Id
+#define ACK_CMD_ID			'K'		// ACK command Id
+#define ERROR_CMD_ID		'E'		// Error commmand Id
+
+/*
  * Definicoes de pinos
  * SSR_PIN - Pino do SSR
  * ENC_PINA - Pino A do encoder

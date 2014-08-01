@@ -33,6 +33,10 @@ boolean ssr_state; // estado atual do SSR
 int ssr_win_size = 2000; // 2000ms de janela (mudar de acordo com o modo?)
 PID pid(&pid_in, &pid_out, &settings.sv, PID_CONS_KP, PID_CONS_KI, PID_CONS_KD, DIRECT);
 
+//Serial Communication
+char command_buffer[MAX_COMMAND_SIZE] =  "";
+char command_ptr = 0;
+
 void setup() {
   // tenta ler a configuracao salva nd eeprom
   eeprom_read_block((void*)&settings, (void*)0, sizeof(settings));
@@ -55,6 +59,9 @@ void setup() {
   digitalWrite(ENC_PINA, HIGH);
   digitalWrite(ENC_PINB, HIGH);
   digitalWrite(ENC_SW, HIGH);
+  
+  // inicializa serial
+  Serial.begin(SERIAL_PORT_SPEED);
 
   // inicializa o resto
   sensors.begin();
@@ -237,3 +244,98 @@ unsigned char rotary_process() {
   return (state & 0x30);
 }
 
+// handler da serial
+void serialHandler() {
+  unsigned char	read_byte;
+  
+  while (Serial.available()) {
+    read_byte = Serial.read();
+    
+    // command must start with a '?'
+    if ((command_ptr == 0) && (read_byte != '?'))
+      continue;
+    
+    // if command start received, reset command buffer
+    if (read_byte == '?') {
+      command_ptr = 0;
+      command_buffer[command_ptr++] = read_byte;
+      continue;
+    }
+    
+    // write byte to command buffer
+    command_buffer[command_ptr++] = read_byte;
+    
+    // command end (0x0A)
+    if (read_byte == 0x0A) {
+      parseCommand(); // call command parser
+      break;
+    }
+    
+    // command size violation: reset buffer
+    if (command_ptr >= MAX_COMMAND_SIZE)
+      command_ptr = 0;
+  }
+}
+
+// command parser
+char parseCommand() {
+  unsigned char command_id = command_buffer[1];
+  unsigned char checksum = 0;
+  unsigned char address;
+  unsigned long data;
+  unsigned char data_size;
+  unsigned char i;
+  
+  // Checksum computation
+  for (i = 0; i < command_ptr - 4; i++) { // CR/LF end markers and checksum itself are excluded from checksum computation
+    checksum += command_buffer[i];
+  }	
+  
+  // Checksum error checking
+  if ((long)checksum != hex2bin(command_buffer, command_ptr - 4, command_ptr - 3)) {
+	Serial.print("Bad CRC!\n");
+    return -1;
+  }
+  
+  address = hex2bin(command_buffer, 2, 3);
+  
+  // data field size
+  data_size = command_ptr - 8; // 8 = size of START + CMD_ID + ADDR + CHECKSUM + CR/LF
+  
+  switch(command_id){
+    // Write byte
+    case WRITE_BYTE_CMD_ID:
+      
+      data = hex2bin(command_buffer, 4, 4 + data_size);
+      Serial.print("Escrita!\n");
+      break;
+    
+    // Read byte
+    case READ_BYTE_CMD_ID:	
+    Serial.print("Leitura!\n");
+    
+      break;
+    // Invalid
+    default:
+      break;
+  }
+}
+
+// ASCII hex string to binary (long)
+unsigned long hex2bin (const char *ptr, unsigned char left, unsigned char right) {
+  unsigned long value = 0;
+  char ch = *(ptr + left);
+  unsigned char nibble;
+  
+  for (nibble = left; nibble <= right; nibble++) {
+    if (ch >= '0' && ch <= '9')
+        value = (value << 4) + (ch - '0');
+    else if (ch >= 'A' && ch <= 'F')
+      value = (value << 4) + (ch - 'A' + 10);
+    else if (ch >= 'a' && ch <= 'f')
+      value = (value << 4) + (ch - 'a' + 10);
+    else
+      return value;
+    ch = *(++ptr);
+  }
+}
