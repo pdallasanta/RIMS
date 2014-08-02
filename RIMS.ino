@@ -53,14 +53,14 @@ void setup() {
 
   // inicializa pinos
   pinMode(SSR_PIN, OUTPUT);
-  pinMode(ENC_PINA, INPUT); 
+  pinMode(ENC_PINA, INPUT);
   pinMode(ENC_PINB, INPUT);
   pinMode(ENC_SW, INPUT);
   digitalWrite(SSR_PIN, LOW);
   digitalWrite(ENC_PINA, HIGH);
   digitalWrite(ENC_PINB, HIGH);
   digitalWrite(ENC_SW, HIGH);
-  
+
   // inicializa serial
   Serial.begin(SERIAL_PORT_SPEED);
 
@@ -127,6 +127,9 @@ void loop() {
 
   // copia pid_out para on_time que eh volatile
   on_time = pid_out;
+
+  // handler da serial
+  serialHandler();
 }
 
 // handler da interrupcao do timer
@@ -141,11 +144,11 @@ SIGNAL(TIMER2_OVF_vect) {
 // decide quando o SSR liga ou desliga
 void SSR_Output() {
   unsigned long now = millis();
-  
+
   if (now - ssr_win_starttime > ssr_win_size) {
     ssr_win_starttime += ssr_win_size;
   }
-  
+
   if ((on_time > 100) && (on_time > (now - ssr_win_starttime))) {
     digitalWrite(SSR_PIN, HIGH);
   } else {
@@ -158,26 +161,26 @@ void changeTemp() {
   unsigned char result;
   unsigned long now, last_blink;
   boolean blink = false;
-  
+
   lcdUpdateSV(); // mostrar o SV em modo de mudanca de temperatura
   lcdBlinkSV(false); // mostra os colchetes ao redor da temperatura
   buttonPressed = false;
   last_blink = millis();
-  
+
   // fica nesse loop de ajuste do SV ateh o cara apertar o botao de novo
   while (!buttonPressed) {
     result = rotary_process();
-    
+
     if (result == DIR_CCW) {
       settings.sv -= ENC_STEP;
     } else if (result == DIR_CW) {
       settings.sv += ENC_STEP;
     }
-    
+
     if (result) {
       lcdUpdateSV(); // soh atualiza LCD se mexeu o encoder
     }
-    
+
     // pisca os colchetes ao redor do SV a cada 500ms
     now = millis();
     if (now - last_blink > 500) {
@@ -186,12 +189,12 @@ void changeTemp() {
       lcdBlinkSV(blink);
     }
   }
-  
+
   // chegou aqui porque botao foi apertado novamente, entao salva e sai
   eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));
   buttonPressed = false;
   op_state = OS_RUN;
-  
+
   // gambiarra temporaria: se depois do ajuste a temperatura atual estiver a
   // 1 grau de distancia da SV, ele entra em autotune
   if (abs(pid_in - settings.sv) < 1.0) {
@@ -213,9 +216,9 @@ void finish_autotune() {
   settings.Ki = aTune.GetKi();
   settings.Kd = aTune.GetKd();
   pid_mode = PID_MODE_NORMAL;
-  
+
   pid.SetTunings(settings.Kp, settings.Ki, settings.Kd);
-  eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));   
+  eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));
 }
 
 // tah tosco isso aqui
@@ -268,12 +271,12 @@ void lcdBlinkSV(boolean blink) {
     lcd.setCursor(13,0);
     lcd.print(" ");
     lcd.setCursor(19,0);
-    lcd.print(" ");    
+    lcd.print(" ");
   } else {
     lcd.setCursor(13,0);
     lcd.print("[");
     lcd.setCursor(19,0);
-    lcd.print("]");    
+    lcd.print("]");
   }
 }
 
@@ -296,33 +299,38 @@ unsigned char rotary_process() {
   return (state & 0x30);
 }
 
+/*
+ * Funcoes para comunicacao serial
+*/
+
 // handler da serial
 void serialHandler() {
-  unsigned char	read_byte;
-  
+  unsigned char read_byte;
+
   while (Serial.available()) {
     read_byte = Serial.read();
-    
+
     // command must start with a '?'
     if ((command_ptr == 0) && (read_byte != '?'))
       continue;
-    
+
     // if command start received, reset command buffer
     if (read_byte == '?') {
       command_ptr = 0;
       command_buffer[command_ptr++] = read_byte;
       continue;
     }
-    
+
     // write byte to command buffer
     command_buffer[command_ptr++] = read_byte;
-    
+
     // command end (0x0A)
     if (read_byte == 0x0A) {
       parseCommand(); // call command parser
+      command_ptr = 0;
       break;
     }
-    
+
     // command size violation: reset buffer
     if (command_ptr >= MAX_COMMAND_SIZE)
       command_ptr = 0;
@@ -330,42 +338,52 @@ void serialHandler() {
 }
 
 // command parser
-char parseCommand() {
+void parseCommand() {
   unsigned char command_id = command_buffer[1];
   unsigned char checksum = 0;
   unsigned char address;
   unsigned long data;
   unsigned char data_size;
   unsigned char i;
-  
+
   // Checksum computation
   for (i = 0; i < command_ptr - 4; i++) { // CR/LF end markers and checksum itself are excluded from checksum computation
     checksum += command_buffer[i];
-  }	
-  
-  // Checksum error checking
-  if ((long)checksum != hex2bin(command_buffer, command_ptr - 4, command_ptr - 3)) {
-	Serial.print("Bad CRC!\n");
-    return -1;
   }
-  
-  address = hex2bin(command_buffer, 2, 3);
-  
+
+  // Verify checksum
+  if ((long)checksum != ascii2long(command_buffer, command_ptr - 4, command_ptr - 3)) {
+    sendError(command_id, 1);
+    return;
+  }
+
+  // get address
+  address = (char) ascii2long(command_buffer, 2, 3);
+
   // data field size
   data_size = command_ptr - 8; // 8 = size of START + CMD_ID + ADDR + CHECKSUM + CR/LF
-  
+
   switch(command_id){
-    // Write byte
-    case WRITE_BYTE_CMD_ID:
-      
-      data = hex2bin(command_buffer, 4, 4 + data_size);
-      Serial.print("Escrita!\n");
+    // Write command
+    case WRITE_REGISTER_CMD:
+      // Data field size verification
+      if ((data_size < 1) || (data_size > 8)) {
+          sendError(command_id, 0);
+          return;
+      }
+      // Extract data
+      data = ascii2long(command_buffer, 4, 4 + data_size - 1);
+
+      if (setRegister(address, data)) {
+        sendAck(command_id);
+      } else {
+        sendError(command_id, 0);
+      }
       break;
-    
-    // Read byte
-    case READ_BYTE_CMD_ID:	
-    Serial.print("Leitura!\n");
-    
+
+    // Read command
+    case READ_REGISTER_CMD:
+      sendCommand('R', getRegister(address), 4);
       break;
     // Invalid
     default:
@@ -373,21 +391,166 @@ char parseCommand() {
   }
 }
 
-// ASCII hex string to binary (long)
-unsigned long hex2bin (const char *ptr, unsigned char left, unsigned char right) {
+// ASCII hex string to long
+unsigned long ascii2long (const char *ptr, unsigned char left, unsigned char right) {
   unsigned long value = 0;
-  char ch = *(ptr + left);
+  char ch;
   unsigned char nibble;
-  
+
   for (nibble = left; nibble <= right; nibble++) {
+    ch = *(ptr + nibble);
     if (ch >= '0' && ch <= '9')
         value = (value << 4) + (ch - '0');
     else if (ch >= 'A' && ch <= 'F')
       value = (value << 4) + (ch - 'A' + 10);
     else if (ch >= 'a' && ch <= 'f')
       value = (value << 4) + (ch - 'a' + 10);
-    else
-      return value;
-    ch = *(++ptr);
+  }
+  return value;
+}
+
+// Send command
+void sendCommand(char id, unsigned long data, unsigned char data_bytes){
+  unsigned char checksum = 0;
+  char ptr = 0;
+  char i;
+  char nibble;
+  char command[MAX_COMMAND_SIZE];
+
+  command[ptr++] = '=';
+  command[ptr++] = id;
+
+  // Convert data nibbles to ASCII
+  for (i = 2*data_bytes - 1; i >= 0; i--){
+    nibble = (data >> i*4) & 0xf;
+    command[ptr++] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+  }
+
+  // Send command bytes and calculate checksum
+  for (i = 0; i < ptr; i++){
+    Serial.write(command[i]); // write byte to serial
+    checksum += command[i]; // update checksum
+  }
+
+  // Send checksum
+  if (checksum < 16) Serial.print('0');
+  Serial.print(checksum, HEX);
+
+  // Ending
+  Serial.write(0x0D); // CR
+  Serial.write(0x0A); // LF
+
+  Serial.flush();
+}
+
+// Send command error messasge
+void sendError(char src_cmd_id, char error_code){
+  unsigned char checksum;
+  unsigned char err_code_ascii = error_code < 10 ? '0' + error_code : 'A' + error_code - 10;
+
+  Serial.write('=');
+  Serial.write('E');
+  Serial.write(src_cmd_id);
+  Serial.write(err_code_ascii);
+
+  checksum = '=' + 'E' + src_cmd_id + err_code_ascii;
+
+  // Send checksum
+  if (checksum < 16) Serial.print('0');
+  Serial.print(checksum, HEX);
+
+  // Ending
+  Serial.write(0x0D); // CR
+  Serial.write(0x0A); // LF
+
+  Serial.flush();
+}
+
+// Send acknowledge
+void sendAck(char src_cmd_id){
+  unsigned char checksum;
+
+  Serial.write('=');
+  Serial.write('K');
+  Serial.write(src_cmd_id);
+
+  checksum = '=' + 'K' + src_cmd_id;
+
+  // Send checksum
+  if (checksum < 16) Serial.print('0');
+  Serial.print(checksum, HEX);
+
+  // Ending
+  Serial.write(0x0D); // CR
+  Serial.write(0x0A); // LF
+
+  Serial.flush();
+}
+
+// Get register value
+unsigned long getRegister(unsigned char address) {
+  switch(address){
+    // System ID
+    case REG_SYS_ID:
+      return SYSTEM_ID;
+    // Firmware version:
+    case REG_FW_VER:
+        return (FW_MAJOR_VERSION << 8) + FW_MINOR_VERSION;
+    // PID parameters
+    case REG_PID_SV:
+        return long(settings.sv*pow(2.0, 16));
+    case REG_PID_KP:
+        return long(settings.Kp*pow(2.0, 16));
+    case REG_PID_KI:
+        return long(settings.Ki*pow(2.0, 16));
+    case REG_PID_KD:
+        return long(settings.Kd*pow(2.0, 16));
+    case REG_PID_SET_MODE:
+    case REG_PID_OP_MODE:
+        return long(pid_mode);
+    case REG_RIMS_OUT_T:
+        return long(pid_in*pow(2.0, 16));
+    case REG_HEATER_PWM:
+        return long(100.0*pow(2.0, 16)*pid_out/double(ssr_win_size));
+    case REG_ALARMS:
+    default:
+      return 0;
+  }
+}
+
+// Set register value
+char setRegister(unsigned char address, unsigned long data) {
+  switch(address){
+    case REG_PID_SV:
+      settings.sv = double(data)/pow(2.0, 16);
+      return 1;
+    case REG_PID_KP:
+      settings.Kp = double(data)/pow(2.0, 16);
+      return 1;
+    case REG_PID_KI:
+      settings.Ki = double(data)/pow(2.0, 16);
+      return 1;
+    case REG_PID_KD:
+      settings.Kd    = double(data)/pow(2.0, 16);
+      return 1;
+    case REG_PID_SET_MODE:
+      return 1;
+    // Non-volatile settings read/write control
+    case REG_PID_NV_SETTINGS:
+      switch(data) {
+        // Save settings
+        case 1:
+          eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));
+          return 1;
+        // load settings
+        case 2:
+          eeprom_read_block((void*)&settings, (void*)0, sizeof(settings));
+          return 1;
+        // Invalid
+        default:
+          return 0;
+      }
+    default:
+      return 0;
   }
 }

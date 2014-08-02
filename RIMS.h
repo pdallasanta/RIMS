@@ -2,6 +2,12 @@
  * RIMS.h
  */
 
+ /*
+ * Versao de firmware
+ */
+#define FW_MAJOR_VERSION 0
+#define FW_MINOR_VERSION 1
+
 /*
  * Definicoes de estado do sistema
  */
@@ -11,7 +17,7 @@
 
 /*
  * Definicoes do PID
- */ 
+ */
 #define PID_MODE_NORMAL 0
 #define PID_MODE_TUNE   1
 #define PID_KP          850
@@ -38,14 +44,31 @@
  * Definicoes da comunicacao serial
  *
 */
-#define SERIAL_PORT_SPEED	57600	// Serial port bit rate
-#define MAX_COMMAND_SIZE	16		// Maximum command size
+#define SERIAL_PORT_SPEED   57600 // Serial port bit rate
+#define MAX_COMMAND_SIZE    16    // Maximum command size
+
+//System Id
+#define SYSTEM_ID   0x52494d53    // 'RIMS'
 
 // IDs dos comandos
-#define WRITE_BYTE_CMD_ID	'W'		// Write byte command Id
-#define READ_BYTE_CMD_ID	'R'		// Read byte command Id
-#define ACK_CMD_ID			'K'		// ACK command Id
-#define ERROR_CMD_ID		'E'		// Error commmand Id
+#define WRITE_REGISTER_CMD  'W' // Write register command Id
+#define READ_REGISTER_CMD   'R' // Read register command Id
+#define ACK_CMD             'K' // ACK command Id
+#define ERROR_CMD           'E' // Error commmand Id
+
+// Offsets dos registradores
+#define REG_SYS_ID          0x00 // System Id
+#define REG_FW_VER          0x01 // FW version
+#define REG_PID_SV          0x08 // PID set value
+#define REG_PID_KP          0x09 // KP
+#define REG_PID_KI          0x0A // KI
+#define REG_PID_KD          0x0B // KD
+#define REG_PID_SET_MODE    0x0C // PID set mode
+#define REG_PID_OP_MODE     0x0D // PID operating mode
+#define REG_PID_NV_SETTINGS 0x0F // PID non-volatile settings control
+#define REG_RIMS_OUT_T      0x80 // RIMS output temperature
+#define REG_HEATER_PWM      0x81 // Heater PWM
+#define REG_ALARMS          0x82 // Alarms
 
 /*
  * Definicoes de pinos
