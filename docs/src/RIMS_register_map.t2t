@@ -1,0 +1,33 @@
+ RIMS Register Map
+
+
+%!target: html
+
++ Release info +
+
+ ||   Address   |  Register name  |  Register Type |  Data type  |  Notes                                                                     |
+  |  0x00       |  SYS_ID         |   RO           | long        | 0x52494d53 ("RIMS)  |
+  |  0x01       |  FW_VER         |   RO           | long        | Firmware version    |
+  
+  
++ PID +
+  
+ ||   Address   |  Register name  |  Register Type |  Data type                |  Notes                                                                     |
+  |  0x08       | PID_SV          |  R/W           | long, scale factor = 2^16 | PID set value (in °C)    |
+  |  0x09       | PID_KP          |  R/W           | long, scale factor = 2^16 | PID proportional gain    |
+  |  0x0A       | PID_KI          |  R/W           | long, scale factor = 2^16 | PID integral gain        |
+  |  0x0B       | PID_KD          |  R/W           | long, scale factor = 2^16 | PID derivative gain      |
+  |  0x0C       | PID_SET_MODE    |  R/W           | char                      | PID set operating mode (TBD)      |
+  |  0x0D       | PID_OP_MODE     |  RO            | char                      | Current  PID operating mode (TBD) |
+  |  0x0F       | PID_NV_SETTINGS |  WO            | char                      | Non-volatile settings read/write control: write 1 to save settings to E2PROM or 2 to load settings |
+ 
++ Status +
+
+ ||   Address   |  Register name  |  Register Type |  Data type                |  Notes                                                                     |
+  |  0x80       |  RIMS_OUT_T     |  RO            | long, scale factor = 2^16 | Current temperature @ RIMS tube output |
+  |  0x81       |  HEATER_PWM     |  RO            | long, scale factor = 2^16 | Heater PWM dutty cycle (%)             |
+  |  0x82       |  ALARMS         |  RO            | long                      | Alarm bit mask (TBD)                   |
+
++ Advanced/Debug +
+
+TBD

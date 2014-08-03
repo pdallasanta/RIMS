@@ -1,0 +1,132 @@
+ RIMS Command Set
+
+
+%!target: html                             
+%!options: --toc --toc-level 2
+
++ Command format +
+
+ || Field    | Size  | Notes                     |
+  | START    |  1    | "?" (ASCII 0x3F) for requests or "=" (ASCII 0x3D) for responses |
+  | CMD_ID   |  1    | Command Id (see table bellow) |
+  | CMD_DATA | 0..8  | Command Data              |
+  | CHKSUM   |  2    | Checksum                  |
+  | END      |  2    | CR/LF (ASCII 0x0D & 0x0A) |
+  
++ Command Ids +
+
+ || Id            | Command            | Notes                   |
+  | "W" (0x57)    | Write register     | Write data to register  |
+  | "R" (0x52)    | Read register      | Read data from register |
+  | "K" (0x4B)    | ACK                | OK/ACK message          |
+  | "E" (0x45)    | Error              | Error message           |
+  
+
++ Command Details +
+
+++ Write Register ++
+
+ || Field  | Size   | Notes                     |
+  | START  |  1     | "?" (ASCII 0x3F)          |
+  | CMD_ID |  1     | "W" (ASCII 0x57)          |
+  | ADDR   |  2     | Register address (ASCII, hex format) |
+  | DATA   |  2..8  | Write data (ASCII, hex format)       |
+  | CHKSUM |  2     | Checksum                  |
+  | END    |  2     | CR/LF (ASCII 0x0D & 0x0A) |
+
+++ Read Register Request ++
+
+ || Field  | Size  | Notes                     |
+  | START  |  1    | "?" (ASCII 0x3F)          |
+  | CMD_ID |  1    | "R" (ASCII 0x52)          |
+  | ADDR   |  2    | Register address (ASCII, hex format) |
+  | CHKSUM |  2    | Checksum                  |
+  | END    |  2    | CR/LF (ASCII 0x0D & 0x0A) |
+  
+++ Read Register Response ++
+
+ || Field  | Size   | Notes                     |
+  | START  |  1     | "=" (ASCII 0x3D)          |
+  | CMD_ID |  1     | "R" (ASCII 0x52)          |
+  | DATA   |  2..8  | Read data (ASCII, hex format) |
+  | CHKSUM |  2     | Checksum                  |
+  | END    |  2     | CR/LF (ASCII 0x0D & 0x0A) |
+  
+  
+++ OK/ACK message ++
+
+Used for commands with no specific response message.
+
+ || Field   | Size  | Notes                     |
+  | START   |  1    | "=" (ASCII 0x3D)          |
+  | CMD_ID  |  1    | "K" (ASCII 0x4B)          |
+  | SRC_CMD |  1    | Source command Id (Id of the command that caused the ACK message to be issued)  |
+  | CHKSUM  |  2    | Checksum                  |
+  | END     |  2    | CR/LF (ASCII 0x0D & 0x0A) |
+  
+
+++ Error message ++
+
+ || Field    | Size  | Notes                     |
+  | START    |  1    | "=" (ASCII 0x3D)          |
+  | CMD_ID   |  1    | "E" (ASCII 0x45)          |
+  | ERR_CODE |  1    | Error code (see table bellow) |
+  | CHKSUM   |  2    | Checksum                  |
+  | END      |  2    | CR/LF (ASCII 0x0D & 0x0A) |
+  
++++ Error Codes +++
+
+ ||   Code           |  Description                 |
+  | "0" (ASCII 0x30) | Generic/unspecified error    | 
+  | "1" (ASCII 0x31) | Checksum error               |
+  | "2" (ASCII 0x32) | Command not supported        |
+  | "3" (ASCII 0x33) | Bad command size             |
+  | "4" (ASCII 0x34) | Invalid address              |
+  | "5" (ASCII 0x35) | Value out of range           |
+
++ Handshaking +
+
+All request commands must be followed either by a response, an Error or an ACK message.
+
+ || Request type    | Response                |
+  | Write Register  | ACK                     |
+  | Read Register   | Read response           |
+  
+
++ Checksum Algorithm +
+
+Checksum is computed over START, CMD_ID and CMD_DATA fields. It is defined as the binary sum of all bytes in these fields (discarding any overflow bits) and encoded as a hexadecimal string.
+
++ Examples +
+
+1) Write value 0x10 to register 0xA0:
+
+ | ASCII  |  ?   |  W   |  A   |  0   | 1    |  0   |  6   |   8  | <CR> | <LF> |
+ | Binary | 0x3F | 0x57 | 0x41 | 0x30 | 0x31 | 0x30 | 0x36 | 0x38 | 0x0D | 0x0A |
+ 
+
+2) ACK message to a write request command:
+
+ | ASCII  |  =   |  K   |  W   |  2   |   3  | <CR> | <LF> |
+ | Binary | 0x3D | 0x4B | 0x57 | 0x32 | 0x33 | 0x0D | 0x0A |
+ 
+
+3) Read request, register address = 0x45:
+
+ | ASCII  |  ?   |  R   |  4   |  5   |  F   |   A  | <CR> | <LF> |
+ | Binary | 0x3F | 0x52 | 0x34 | 0x35 | 0x46 | 0x41 | 0x0D | 0x0A |
+ 
+ 
+3) Read response, read data = 0xAB:
+
+ | ASCII  |  =   |  R   |  A   |  B   |  1   |   2  | <CR> | <LF> |
+ | Binary | 0x3D | 0x52 | 0x41 | 0x42 | 0x31 | 0x32 | 0x0D | 0x0A |
+ 
+ 
+4) Generic error message:
+
+ | ASCII  |  =   |  E   |  0   |  8   |   2  | <CR> | <LF> |
+ | Binary | 0x3D | 0x45 | 0x30 | 0x38 | 0x32 | 0x0D | 0x0A |
+ 
+ 
+

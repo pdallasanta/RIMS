@@ -1,0 +1,506 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+<META NAME="generator" CONTENT="http://txt2tags.org">
+<TITLE> RIMS Command Set</TITLE>
+</HEAD><BODY BGCOLOR="white" TEXT="black">
+<CENTER>
+<H1> RIMS Command Set</H1>
+</CENTER>
+
+<P></P>
+<HR NOSHADE SIZE=1>
+<P></P>
+
+  <UL>
+  <LI><A HREF="#toc1">1. Command format</A>
+  <LI><A HREF="#toc2">2. Command Ids</A>
+  <LI><A HREF="#toc3">3. Command Details</A>
+    <UL>
+    <LI><A HREF="#toc4">3.1. Write Register</A>
+    <LI><A HREF="#toc5">3.2. Read Register Request</A>
+    <LI><A HREF="#toc6">3.3. Read Register Response</A>
+    <LI><A HREF="#toc7">3.4. OK/ACK message</A>
+    <LI><A HREF="#toc8">3.5. Error message</A>
+    </UL>
+  <LI><A HREF="#toc9">4. Handshaking</A>
+  <LI><A HREF="#toc10">5. Checksum Algorithm</A>
+  <LI><A HREF="#toc11">6. Examples</A>
+  </UL>
+
+<P></P>
+<HR NOSHADE SIZE=1>
+<P></P>
+
+<A NAME="toc1"></A>
+<H1>1. Command format</H1>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"?" (ASCII 0x3F) for requests or "=" (ASCII 0x3D) for responses</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>Command Id (see table bellow)</TD>
+</TR>
+<TR>
+<TD>CMD_DATA</TD>
+<TD>0..8</TD>
+<TD>Command Data</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc2"></A>
+<H1>2. Command Ids</H1>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Id</TH>
+<TH>Command</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>"W" (0x57)</TD>
+<TD>Write register</TD>
+<TD>Write data to register</TD>
+</TR>
+<TR>
+<TD>"R" (0x52)</TD>
+<TD>Read register</TD>
+<TD>Read data from register</TD>
+</TR>
+<TR>
+<TD>"K" (0x4B)</TD>
+<TD>ACK</TD>
+<TD>OK/ACK message</TD>
+</TR>
+<TR>
+<TD>"E" (0x45)</TD>
+<TD>Error</TD>
+<TD>Error message</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc3"></A>
+<H1>3. Command Details</H1>
+
+<A NAME="toc4"></A>
+<H2>3.1. Write Register</H2>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"?" (ASCII 0x3F)</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>"W" (ASCII 0x57)</TD>
+</TR>
+<TR>
+<TD>ADDR</TD>
+<TD ALIGN="center">2</TD>
+<TD>Register address (ASCII, hex format)</TD>
+</TR>
+<TR>
+<TD>DATA</TD>
+<TD ALIGN="center">2..8</TD>
+<TD>Write data (ASCII, hex format)</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc5"></A>
+<H2>3.2. Read Register Request</H2>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"?" (ASCII 0x3F)</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>"R" (ASCII 0x52)</TD>
+</TR>
+<TR>
+<TD>ADDR</TD>
+<TD ALIGN="center">2</TD>
+<TD>Register address (ASCII, hex format)</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc6"></A>
+<H2>3.3. Read Register Response</H2>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"=" (ASCII 0x3D)</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>"R" (ASCII 0x52)</TD>
+</TR>
+<TR>
+<TD>DATA</TD>
+<TD ALIGN="center">2..8</TD>
+<TD>Read data (ASCII, hex format)</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc7"></A>
+<H2>3.4. OK/ACK message</H2>
+
+<P>
+Used for commands with no specific response message.
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"=" (ASCII 0x3D)</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>"K" (ASCII 0x4B)</TD>
+</TR>
+<TR>
+<TD>SRC_CMD</TD>
+<TD ALIGN="center">1</TD>
+<TD>Source command Id (Id of the command that caused the ACK message to be issued)</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc8"></A>
+<H2>3.5. Error message</H2>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Field</TH>
+<TH>Size</TH>
+<TH>Notes</TH>
+</TR>
+<TR>
+<TD>START</TD>
+<TD ALIGN="center">1</TD>
+<TD>"=" (ASCII 0x3D)</TD>
+</TR>
+<TR>
+<TD>CMD_ID</TD>
+<TD ALIGN="center">1</TD>
+<TD>"E" (ASCII 0x45)</TD>
+</TR>
+<TR>
+<TD>ERR_CODE</TD>
+<TD ALIGN="center">1</TD>
+<TD>Error code (see table bellow)</TD>
+</TR>
+<TR>
+<TD>CHKSUM</TD>
+<TD ALIGN="center">2</TD>
+<TD>Checksum</TD>
+</TR>
+<TR>
+<TD>END</TD>
+<TD ALIGN="center">2</TD>
+<TD>CR/LF (ASCII 0x0D &amp; 0x0A)</TD>
+</TR>
+</TABLE>
+
+<H3>3.5.1. Error Codes</H3>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Code</TH>
+<TH>Description</TH>
+</TR>
+<TR>
+<TD>"0" (ASCII 0x30)</TD>
+<TD>Generic/unspecified error</TD>
+</TR>
+<TR>
+<TD>"1" (ASCII 0x31)</TD>
+<TD>Checksum error</TD>
+</TR>
+<TR>
+<TD>"2" (ASCII 0x32)</TD>
+<TD>Command not supported</TD>
+</TR>
+<TR>
+<TD>"3" (ASCII 0x33)</TD>
+<TD>Bad command size</TD>
+</TR>
+<TR>
+<TD>"4" (ASCII 0x34)</TD>
+<TD>Invalid address</TD>
+</TR>
+<TR>
+<TD>"5" (ASCII 0x35)</TD>
+<TD>Value out of range</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc9"></A>
+<H1>4. Handshaking</H1>
+
+<P>
+All request commands must be followed either by a response, an Error or an ACK message.
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TH>Request type</TH>
+<TH>Response</TH>
+</TR>
+<TR>
+<TD>Write Register</TD>
+<TD>ACK</TD>
+</TR>
+<TR>
+<TD>Read Register</TD>
+<TD>Read response</TD>
+</TR>
+</TABLE>
+
+<A NAME="toc10"></A>
+<H1>5. Checksum Algorithm</H1>
+
+<P>
+Checksum is computed over START, CMD_ID and CMD_DATA fields. It is defined as the binary sum of all bytes in these fields (discarding any overflow bits) and encoded as a hexadecimal string.
+</P>
+
+<A NAME="toc11"></A>
+<H1>6. Examples</H1>
+
+<P>
+1) Write value 0x10 to register 0xA0:
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TD>ASCII</TD>
+<TD ALIGN="center">?</TD>
+<TD ALIGN="center">W</TD>
+<TD ALIGN="center">A</TD>
+<TD ALIGN="center">0</TD>
+<TD>1</TD>
+<TD ALIGN="center">0</TD>
+<TD ALIGN="center">6</TD>
+<TD ALIGN="center">8</TD>
+<TD>&lt;CR&gt;</TD>
+<TD>&lt;LF&gt;</TD>
+</TR>
+<TR>
+<TD>Binary</TD>
+<TD>0x3F</TD>
+<TD>0x57</TD>
+<TD>0x41</TD>
+<TD>0x30</TD>
+<TD>0x31</TD>
+<TD>0x30</TD>
+<TD>0x36</TD>
+<TD>0x38</TD>
+<TD>0x0D</TD>
+<TD>0x0A</TD>
+</TR>
+</TABLE>
+
+<P>
+2) ACK message to a write request command:
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TD>ASCII</TD>
+<TD ALIGN="center">=</TD>
+<TD ALIGN="center">K</TD>
+<TD ALIGN="center">W</TD>
+<TD ALIGN="center">2</TD>
+<TD ALIGN="center">3</TD>
+<TD>&lt;CR&gt;</TD>
+<TD>&lt;LF&gt;</TD>
+</TR>
+<TR>
+<TD>Binary</TD>
+<TD>0x3D</TD>
+<TD>0x4B</TD>
+<TD>0x57</TD>
+<TD>0x32</TD>
+<TD>0x33</TD>
+<TD>0x0D</TD>
+<TD>0x0A</TD>
+</TR>
+</TABLE>
+
+<P>
+3) Read request, register address = 0x45:
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TD>ASCII</TD>
+<TD ALIGN="center">?</TD>
+<TD ALIGN="center">R</TD>
+<TD ALIGN="center">4</TD>
+<TD ALIGN="center">5</TD>
+<TD ALIGN="center">F</TD>
+<TD ALIGN="center">A</TD>
+<TD>&lt;CR&gt;</TD>
+<TD>&lt;LF&gt;</TD>
+</TR>
+<TR>
+<TD>Binary</TD>
+<TD>0x3F</TD>
+<TD>0x52</TD>
+<TD>0x34</TD>
+<TD>0x35</TD>
+<TD>0x46</TD>
+<TD>0x41</TD>
+<TD>0x0D</TD>
+<TD>0x0A</TD>
+</TR>
+</TABLE>
+
+<P>
+3) Read response, read data = 0xAB:
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TD>ASCII</TD>
+<TD ALIGN="center">=</TD>
+<TD ALIGN="center">R</TD>
+<TD ALIGN="center">A</TD>
+<TD ALIGN="center">B</TD>
+<TD ALIGN="center">1</TD>
+<TD ALIGN="center">2</TD>
+<TD>&lt;CR&gt;</TD>
+<TD>&lt;LF&gt;</TD>
+</TR>
+<TR>
+<TD>Binary</TD>
+<TD>0x3D</TD>
+<TD>0x52</TD>
+<TD>0x41</TD>
+<TD>0x42</TD>
+<TD>0x31</TD>
+<TD>0x32</TD>
+<TD>0x0D</TD>
+<TD>0x0A</TD>
+</TR>
+</TABLE>
+
+<P>
+4) Generic error message:
+</P>
+
+<TABLE ALIGN="center" BORDER="1" CELLPADDING="4">
+<TR>
+<TD>ASCII</TD>
+<TD ALIGN="center">=</TD>
+<TD ALIGN="center">E</TD>
+<TD ALIGN="center">0</TD>
+<TD ALIGN="center">8</TD>
+<TD ALIGN="center">2</TD>
+<TD>&lt;CR&gt;</TD>
+<TD>&lt;LF&gt;</TD>
+</TR>
+<TR>
+<TD>Binary</TD>
+<TD>0x3D</TD>
+<TD>0x45</TD>
+<TD>0x30</TD>
+<TD>0x38</TD>
+<TD>0x32</TD>
+<TD>0x0D</TD>
+<TD>0x0A</TD>
+</TR>
+</TABLE>
+
+<!-- html code generated by txt2tags 2.6 (http://txt2tags.org) -->
+<!-- cmdline: txt2tags RIMS_command_set.t2t -->
+</BODY></HTML>
