@@ -112,9 +112,6 @@ void loop() {
 
   // copia pid_out para on_time que eh volatile
   on_time = pid_out;
-
-  // handler da serial
-  serialHandler();
 }
 
 // handler da interrupcao do timer
@@ -263,7 +260,7 @@ unsigned char rotary_process() {
 */
 
 // handler da serial
-void serialHandler() {
+void serialEvent() {
   unsigned char read_byte;
 
   while (Serial.available()) {
