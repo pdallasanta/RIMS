@@ -5,7 +5,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <PID_v1.h>
-#include <PID_AutoTune_v0.h>
 #include "RIMS.h"
 
 volatile unsigned char state = 0; // estado atual do encoder
@@ -23,16 +22,10 @@ DeviceAddress tempSensor;
 
 // PID
 volatile long on_time = 0;
-int pid_mode = PID_MODE_NORMAL;
 double pid_in, pid_out;
 unsigned long ssr_win_starttime;
-int ssr_win_size = 10000; // 10000ms de janela (mudar de acordo com o modo?)
+int ssr_win_size = 2000; // 2000ms de janela
 PID pid(&pid_in, &pid_out, &settings.sv, PID_KP, PID_KI, PID_KD, DIRECT);
-double aTuneStep = 500;
-double aTuneNoise = 1;
-unsigned int aTuneLookBack = 20;
-boolean tuning = false;
-PID_ATune aTune(&pid_in, &pid_out);
 
 //Serial Communication
 char command_buffer[MAX_COMMAND_SIZE] =  "";
@@ -108,16 +101,8 @@ void loop() {
     pid_in = (double)sensors.getTempC(tempSensor);
     last_temp_update = now;
   }
-
-  // fica em tune ate aTune.Runtime() ele retornar true
-  if (tuning) {
-    if (aTune.Runtime()) {
-      finish_autotune();
-    }
-  } else {
-    pid.SetTunings(settings.Kp, settings.Ki, settings.Kd);
-    pid.Compute();
-  }
+  pid.SetTunings(settings.Kp, settings.Ki, settings.Kd);
+  pid.Compute();
 
   // atualiza o LCD a cada intervalo (default = 1000ms)
   if (now - last_lcd_update > LCD_INTERVAL) {
@@ -191,42 +176,17 @@ void changeTemp() {
   }
 
   // chegou aqui porque botao foi apertado novamente, entao salva e sai
+  lcdBlinkSV(true); // garante que os colchetes ficaram desligados
   eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));
   buttonPressed = false;
   op_state = OS_RUN;
-
-  // gambiarra temporaria: se depois do ajuste a temperatura atual estiver a
-  // 1 grau de distancia da SV, ele entra em autotune
-  if (abs(pid_in - settings.sv) < 1.0) {
-    start_autotune();
-  }
-}
-
-void start_autotune() {
-  pid_mode = PID_MODE_TUNE;
-  aTune.SetNoiseBand(aTuneNoise);
-  aTune.SetOutputStep(aTuneStep);
-  aTune.SetLookbackSec((int)aTuneLookBack);
-  tuning = true;
-}
-
-void finish_autotune() {
-  tuning = false;
-  settings.Kp = aTune.GetKp();
-  settings.Ki = aTune.GetKi();
-  settings.Kd = aTune.GetKd();
-  pid_mode = PID_MODE_NORMAL;
-
-  pid.SetTunings(settings.Kp, settings.Ki, settings.Kd);
-  eeprom_write_block((const void*)&settings, (void*)0, sizeof(settings));
 }
 
 // tah tosco isso aqui
 // cuidar com overflow dessas strings
 void lcdUpdate() {
   char tmp1[20], tmp2[20];
-
-  lcd.clear();
+  
   dtostrf(pid_in, 5, 2, tmp1);
   dtostrf(settings.sv, 5, 2, tmp2);
   lcd.setCursor(0,0);
@@ -235,26 +195,23 @@ void lcdUpdate() {
   lcd.setCursor(10,0);
   lcd.print(F("SV: "));
   lcd.print(tmp2);
-
+  
   lcd.setCursor(0,1);
-  lcd.print(F("M: "));
-  lcd.print(pid_mode == PID_MODE_NORMAL ? "Norm" : "Tune");
-  lcd.setCursor(9,1);
-  lcd.print(F("SSR: "));
-  lcd.print(digitalRead(SSR_PIN) == HIGH ? "On" : "Off");
-
+  lcd.print(F("Kp: "));
+  dtostrf(pid.GetKp(), 0, 1, tmp1);
+  lcd.print(tmp1);
   lcd.setCursor(0,2);
-  lcd.print(F("Kp/Ki/Kd:"));
-
+  lcd.print(F("Ki: "));
+  dtostrf(pid.GetKi(), 0, 1, tmp1);
+  lcd.print(tmp1);
   lcd.setCursor(0,3);
-  dtostrf(pid.GetKp(), 0, 2, tmp1);
+  lcd.print(F("Kd: "));
+  dtostrf(pid.GetKd(), 0, 1, tmp1);
   lcd.print(tmp1);
-  lcd.print(F("/"));
-  dtostrf(pid.GetKi(), 0, 2, tmp1);
-  lcd.print(tmp1);
-  lcd.print(F("/"));
-  dtostrf(pid.GetKd(), 0, 2, tmp1);
-  lcd.print(tmp1);
+  
+  lcd.setCursor(12,3);
+  lcd.print(F("SSR: "));
+  lcd.print(digitalRead(SSR_PIN) == HIGH ? "On " : "Off");
 }
 
 // atualiza o SV no LCD
@@ -285,9 +242,11 @@ void buttonPress() {
   // debounce de pobre
   static unsigned long last_interrupt_time = 0;
   unsigned long interrupt_time = millis();
+  
   if (interrupt_time - last_interrupt_time > 200) {
     buttonPressed = true;
   }
+  
   last_interrupt_time = interrupt_time;
 }
 
@@ -505,9 +464,8 @@ unsigned long getRegister(unsigned char address) {
         return long(settings.Ki*pow(2.0, 16));
     case REG_PID_KD:
         return long(settings.Kd*pow(2.0, 16));
-    case REG_PID_SET_MODE:
     case REG_PID_OP_MODE:
-        return long(pid_mode);
+        return long(op_state);
     case REG_RIMS_OUT_T:
         return long(pid_in*pow(2.0, 16));
     case REG_HEATER_PWM:
@@ -532,8 +490,6 @@ char setRegister(unsigned char address, unsigned long data) {
       return 1;
     case REG_PID_KD:
       settings.Kd    = double(data)/pow(2.0, 16);
-      return 1;
-    case REG_PID_SET_MODE:
       return 1;
     // Non-volatile settings read/write control
     case REG_PID_NV_SETTINGS:

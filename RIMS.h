@@ -18,8 +18,6 @@
 /*
  * Definicoes do PID
  */
-#define PID_MODE_NORMAL 0
-#define PID_MODE_TUNE   1
 #define PID_KP          850
 #define PID_KI          0.5
 #define PID_KD          0.1
@@ -63,7 +61,7 @@
 #define REG_PID_KP          0x09 // KP
 #define REG_PID_KI          0x0A // KI
 #define REG_PID_KD          0x0B // KD
-#define REG_PID_SET_MODE    0x0C // PID set mode
+//#define REG_PID_SET_MODE    0x0C // PID set mode -- obsoleto
 #define REG_PID_OP_MODE     0x0D // PID operating mode
 #define REG_PID_NV_SETTINGS 0x0F // PID non-volatile settings control
 #define REG_RIMS_OUT_T      0x80 // RIMS output temperature
