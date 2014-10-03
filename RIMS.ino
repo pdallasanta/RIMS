@@ -49,10 +49,29 @@ void setup() {
   pinMode(ENC_PINA, INPUT);
   pinMode(ENC_PINB, INPUT);
   pinMode(ENC_SW, INPUT);
+  pinMode(ENC_SW_ALT, INPUT);
+  pinMode(FLOW_SW, INPUT);
+  pinMode(PUMP_REL, OUTPUT);
+  pinMode(PROT_REL, OUTPUT);
+  pinMode(AUX_REL, OUTPUT);
+  pinMode(SPARE1, OUTPUT);
+  pinMode(SPARE2, OUTPUT);
+  pinMode(SPARE3, OUTPUT);
+  pinMode(SPARE4, OUTPUT);
+  pinMode(SPARE5, OUTPUT);
   digitalWrite(SSR_PIN, LOW);
   digitalWrite(ENC_PINA, HIGH);
   digitalWrite(ENC_PINB, HIGH);
   digitalWrite(ENC_SW, HIGH);
+  digitalWrite(ENC_SW_ALT, HIGH);
+  digitalWrite(PUMP_REL, HIGH);
+  digitalWrite(PROT_REL, HIGH);
+  digitalWrite(AUX_REL, LOW);
+  digitalWrite(SPARE1, LOW);
+  digitalWrite(SPARE2, LOW);
+  digitalWrite(SPARE3, LOW);
+  digitalWrite(SPARE4, LOW);
+  digitalWrite(SPARE5, LOW);
 
   // inicializa serial
   Serial.begin(SERIAL_PORT_SPEED);

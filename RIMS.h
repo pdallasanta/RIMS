@@ -6,7 +6,7 @@
  * Versao de firmware
  */
 #define FW_MAJOR_VERSION 0
-#define FW_MINOR_VERSION 1
+#define FW_MINOR_VERSION 2
 
 /*
  * Definicoes de estado do sistema
@@ -78,12 +78,22 @@
  * ENC_IRQ - Interrupcao para o botao
  * OW_PIN - Pino do OneWire
  */
-#define SSR_PIN  13 // pino do SSR
-#define ENC_PINA 6 // pino A do Rotary Encoder
-#define ENC_PINB 7 // pino B do Rotary Encoder
-#define ENC_SW   2 // botao do Rotary Encoder
-#define ENC_IRQ  0 // IRQ0 fica associada ao pino 2
-#define OW_PIN   A0 // pino do 1-wire
+#define SSR_PIN    A3 // pino do SSR
+#define ENC_PINA   5  // pino A do Rotary Encoder (CLK)
+#define ENC_PINB   6  // pino B do Rotary Encoder (DT)
+#define ENC_SW     2  // botao do Rotary Encoder
+#define ENC_SW_ALT 7  // pino alternativo para o botao do Rotary Encoder (para evitar conflito com shield Ethernet)
+#define ENC_IRQ    0  // IRQ0 fica associada ao pino 2
+#define OW_PIN     8  // pino do 1-wire
+#define FLOW_SW    9  // sensor de fluxo
+#define PUMP_REL   A0 // rele de acionamento da bomba
+#define PROT_REL   A1	// rele de protecao da resistencia
+#define AUX_REL    13 // Auxiliary/spare relay
+#define SPARE1     11 // Spare 1
+#define SPARE2     12 // Spare 2
+#define SPARE3     A2 // Spare 3
+#define SPARE4     A5 // Spare 4
+#define SPARE5     A4 // Spare 5
 
 /*
  * Definicoes do Rotary Encoder
